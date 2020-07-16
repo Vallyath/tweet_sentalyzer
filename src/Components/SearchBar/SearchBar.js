@@ -3,23 +3,27 @@ import React from 'react';
 class SearchBar extends React.Component {
     constructor(props){
         super(props);
-        this.search = this.search.bind(this);
-        this.handleTermChange = this.handleTermChange.bind(this);
+        this.state = {
+            words: ""
+        }
     }
 
-    search(){
-        this.props.onSearch(this.state.term);
+    search = () => {
+        fetch('http://localhost:5000/test').then(res => res.json()).then(result => {
+            this.setState({words: result.data});
+        })
     }
 
-    handleTermChange(event){
-        this.setState({term: event.target.value });
+    submitSearch = (event) => {
+        this.search();
     }
 
     render(){
         return (
             <div className="SearchBar">
                 <input placeholder="Enter a topic" onChange={this.handleTermChange}/>
-                <button className="SearchButton" onClick={this.search}>SEARCH</button>
+                <button className="SearchButton" onClick={this.submitSearch}>SEARCH</button>
+                <h1>{this.state.words}</h1>
             </div>
         )
     }
