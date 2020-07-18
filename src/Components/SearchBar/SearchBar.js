@@ -4,26 +4,32 @@ class SearchBar extends React.Component {
     constructor(props){
         super(props);
         this.state = {
-            words: ""
+            topic: ""
         }
     }
 
-    search = () => {
-        fetch('http://localhost:5000/test').then(res => res.json()).then(result => {
-            this.setState({words: result.data});
-        })
+    handleTextChange = (event) => {
+        this.setState({topic: event.target.value})
     }
 
-    submitSearch = (event) => {
+    search = () => {
+        const requestBody = {
+            headers: {"Content-Type": "application/json"},
+            method: "POST",
+            body: JSON.stringify({topic: this.state.topic})
+        }
+        return fetch('http://localhost:5000/topic', requestBody).then(res => res.json()).then(data => console.log(data))
+    }
+
+    submitSearch = () => {
         this.search();
     }
 
     render(){
         return (
             <div className="SearchBar">
-                <input placeholder="Enter a topic" onChange={this.handleTermChange}/>
+                <input placeholder="Enter a topic" onChange={this.handleTextChange}/>
                 <button className="SearchButton" onClick={this.submitSearch}>SEARCH</button>
-                <h1>{this.state.words}</h1>
             </div>
         )
     }
