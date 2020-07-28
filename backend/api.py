@@ -19,6 +19,7 @@ b64_key = b64_key.decode('ascii')
 
 @app.route("/topic", methods=['POST','GET'])
 def result():
+    tweet_array = []
     url = 'https://api.twitter.com/1.1/search/tweets.json'
     auth_url = 'https://api.twitter.com/oauth2/token'
     auth_headers = {
@@ -28,18 +29,26 @@ def result():
     auth_data = {
         "grant_type": "client_credentials"
     }
-    authResp = requests.post(auth_url, headers=auth_headers, data=auth_data) 
-    access = authResp.json()['access_token']
+    auth_resp = requests.post(auth_url, headers=auth_headers, data=auth_data) 
+    access = auth_resp.json()['access_token']
     topic = request.get_json()
     print(topic)
     search_headers = {
         "Authorization": f"Bearer {access}"
     }
     search_params = {
-        "q": f"{topic['topic']}"
+        "q": f"{topic['topic']}",
+        "count": 100
     }
-    response = requests.get(url, headers=search_headers, params=search_params)
-    data = json.loads(response.content)
-    return data
+
+    for y in range(50):
+        response = requests.get(url, headers=search_headers, params=search_params)
+        data = json.loads(response.content)
+        tweet_array.append(data["statuses"])
+        next_results_url_params = data['search_metadata']['next_results']
+        next_max_id = next_results_url_params.split('max_id=')[1].split('&')[0]
+        search_params["max_id"] = next_max_id
+
+    return (data)
     
 
