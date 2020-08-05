@@ -9,8 +9,13 @@ class App extends React.Component {
 
   render(){
     return (
-      <div className="Search">
-        <SearchBar/>
+      <div>
+        <div className="Title">
+          <h1>Twitter Sentiment Analyzer</h1>
+        </div>
+        <div className="Search">
+          <SearchBar />
+        </div>
       </div>
     )
   }

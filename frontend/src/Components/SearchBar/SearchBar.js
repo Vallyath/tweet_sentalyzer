@@ -27,9 +27,13 @@ class SearchBar extends React.Component {
 
     render(){
         return (
-            <div className="SearchBar">
-                <input placeholder="Enter a topic" onChange={this.handleTextChange}/>
-                <button className="SearchButton" onClick={this.submitSearch}>SEARCH</button>
+            <div className="form-row">
+                <div className="col-5 offset-3">
+                    <input className="form-control" placeholder="Enter a topic" onChange={this.handleTextChange}/>
+                </div>
+                <div className="col-3">
+                    <button className="btn btn-light" onClick={this.submitSearch}>Search</button>
+                </div>
             </div>
         )
     }

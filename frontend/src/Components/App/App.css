@@ -1,3 +1,7 @@
+body {
+  background-color: #1DA1F2;
+}
+
 .App {
   text-align: center;
 }
@@ -27,6 +31,19 @@
 .App-link {
   color: #61dafb;
 }
+
+.Title {
+  text-align: center;
+  font-family: 'Pacifico', cursive;
+  margin-top: 200px;
+  color: white;
+}
+
+.Search {
+  margin-top: 20px;
+}
+
+
 
 @keyframes App-logo-spin {
   from {
