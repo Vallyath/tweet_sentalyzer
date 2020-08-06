@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 from requests_oauthlib import OAuth1Session
-import requests, os, json, base64, pickle, nltk, re, string
+import requests, os, json, base64, pickle, nltk, re, string, calendar, datetime
 from nltk.tokenize import TweetTokenizer
 from nltk.tag import pos_tag
 from nltk.corpus import stopwords
@@ -49,7 +49,14 @@ def result():
     missed_count = 0
     tweet_array = []
     time_array = []
- 
+    pos_dict = {}
+    neg_dict = {}
+    pos_time = {}
+    neg_time = {}
+    pos_sorted = {}
+    neg_sorted = {}
+
+    months = {v: k for k,v in enumerate(calendar.month_abbr)}
 
     url = 'https://api.twitter.com/1.1/search/tweets.json'
     auth_url = 'https://api.twitter.com/oauth2/token'
@@ -79,7 +86,7 @@ def result():
         response = requests.get(url, headers=search_headers, params=search_params)
         data = json.loads(response.content)
         for j in range(len(data["statuses"])):
-            time_array.append(data["statuses"][j]["created_at"])
+            time_array.append(data["statuses"][j]["created_at"][4:11] + data["statuses"][j]["created_at"][26:30])
             tweet_array.append(data["statuses"][j]["text"])
             next_results_url_params = data['search_metadata']['next_results']
             next_max_id = next_results_url_params.split('max_id=')[1].split('&')[0]
@@ -95,8 +102,16 @@ def result():
         tweet_sentiment = classifier.classify(dict([token, True] for token in tweet_tokens))
         if(tweet_sentiment == "Positive"):
             pos_sentiment += 1
+            if time_array[i] in pos_dict:
+                pos_dict[time_array[i]] += 1
+            else:
+                pos_dict[time_array[i]] = 1
         elif(tweet_sentiment == "Negative"):
             neg_sentiment += 1
+            if time_array[i] in neg_dict:
+                neg_dict[time_array[i]] += 1
+            else:
+                neg_dict[time_array[i]] = 1
         else:
             missed_count += 1
     
@@ -104,4 +119,31 @@ def result():
     print(f"Negative Sentiment Counter: {neg_sentiment}")
     print(f"Missed Sentiment Counter: {missed_count}")
 
+    for key in pos_dict:
+        pos_time[f"{months[key[:3]]}-{key[4:6]}-{key[7:11]}"] = pos_dict[key]
+    
+    for key in neg_dict:
+        neg_time[f"{months[key[:3]]}-{key[4:6]}-{key[7:11]}"] = neg_dict[key]
+
+    pos_dates = [datetime.datetime.strptime(key, '%m-%d-%Y') for key in pos_time]
+    pos_dates.sort()
+    sorted_pos_dates = [datetime.datetime.strftime(dates, '%m-%d-%Y') for dates in pos_dates]
+    neg_dates = [datetime.datetime.strptime(key, '%m-%d-%Y') for key in neg_time]
+    neg_dates.sort()
+    sorted_neg_dates = [datetime.datetime.strftime(dates, '%m-%d-%Y') for dates in pos_dates]
+    
+    for i in range(len(sorted_pos_dates)):
+        if(sorted_pos_dates[i][0] == '0'):
+            pos_sorted[sorted_pos_dates[i]] = pos_time[sorted_pos_dates[i][1:]]
+        else:
+            pos_sorted[sorted_pos_dates[i]] = pos_time[sorted_pos_dates[i]]
+
+    for i in range(len(sorted_neg_dates)):
+        if(sorted_neg_dates[i][0] == '0'):
+            neg_sorted[sorted_neg_dates[i]] = neg_time[sorted_neg_dates[i][1:]]
+        else:
+            neg_sorted[sorted_neg_dates[i]] = neg_time[sorted_neg_dates[i]]
+
+    print(pos_sorted)
+    print(neg_sorted)
 
