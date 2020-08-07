@@ -1,6 +1,8 @@
 from flask import Flask, request, jsonify
 from requests_oauthlib import OAuth1Session
 import requests, os, json, base64, pickle, nltk, re, string, calendar, datetime
+import matplotlib.pyplot as plt
+import numpy as np
 from nltk.tokenize import TweetTokenizer
 from nltk.tag import pos_tag
 from nltk.corpus import stopwords
@@ -55,6 +57,8 @@ def result():
     neg_time = {}
     pos_sorted = {}
     neg_sorted = {}
+    dates = []
+    sentiments = []
 
     months = {v: k for k,v in enumerate(calendar.month_abbr)}
 
@@ -146,4 +150,14 @@ def result():
 
     print(pos_sorted)
     print(neg_sorted)
+
+    for key in pos_sorted:
+        total = pos_sorted[key] + neg_sorted[key]
+        sentiment = (pos_sorted[key] - neg_sorted[key])/total
+        dates.append(key)
+        sentiments.append(sentiment)
+
+    return ({"sentiment": sentiments, "dates": dates, "totalpos": pos_sentiment, "totalneg": neg_sentiment})
+    
+
 
