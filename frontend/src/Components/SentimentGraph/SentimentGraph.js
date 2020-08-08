@@ -1,5 +1,4 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
 import Highcharts from 'highcharts';
 import HighchartsReact from 'highcharts-react-official';
 
@@ -13,19 +12,26 @@ class SentimentGraph extends React.Component{
             },
             allowChartUpdate: true,
             title: {
-                text: 'Sentiment Graph'
+                text: `Daily Sentiment Based on ${this.props.data["totaltweets"]} Tweets`
             },
             xAxis: {
+                title: {
+                    text: "Dates (mm/dd/yyyy)"
+                },
                 categories: this.props.data["dates"]
             },
             yAxis: {
                 title: {
-                    text: 'Sentiment (Positive - Negative)/Daily Sentiment'
-                }
+                    text: 'Sentiment (-1 for Most Negative/ 1 for Most Positive)'
+                },
+                max: 1,
+                min: -1
             },
             series: [{
-                data: this.props.data["sentiment"]
+                data: this.props.data["sentiment"],
+                name: 'Daily Sentiment'
             }]
+
         }
         return <HighchartsReact allowChartUpdate={options.allowChartUpdate} highcharts={Highcharts} options={options}/>
     }

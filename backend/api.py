@@ -8,7 +8,7 @@ from nltk.tag import pos_tag
 from nltk.corpus import stopwords
 from nltk.stem.wordnet import WordNetLemmatizer
 from flask_cors import CORS
-app = Flask(__name__)
+app = Flask(__name__, static_folder='./build', static_url_path='/')
 CORS(app)
 
 API_KEY = os.environ.get('PROJECT_API_KEY')
@@ -24,6 +24,10 @@ classifier_file = open('tweet_classifier.pickle', 'rb')
 classifier = pickle.load(classifier_file)
 tt = TweetTokenizer()
 stop_words = stopwords.words('english')
+
+@app.route('/')
+def index():
+    return app.send_static_file('index.html')
 
 def removeNoise(tweetTokens, stop_words = ()):
     cleanedTokens = []
@@ -55,8 +59,11 @@ def result():
     neg_dict = {}
     pos_time = {}
     neg_time = {}
+    all_time = {}
+    all_dates = []
     pos_sorted = {}
     neg_sorted = {}
+    all_sorted = {}
     dates = []
     sentiments = []
 
@@ -113,9 +120,9 @@ def result():
         elif(tweet_sentiment == "Negative"):
             neg_sentiment += 1
             if time_array[i] in neg_dict:
-                neg_dict[time_array[i]] += 1
+                neg_dict[time_array[i]] -= 1
             else:
-                neg_dict[time_array[i]] = 1
+                neg_dict[time_array[i]] = -1
         else:
             missed_count += 1
     
@@ -129,35 +136,65 @@ def result():
     for key in neg_dict:
         neg_time[f"{months[key[:3]]}-{key[4:6]}-{key[7:11]}"] = neg_dict[key]
 
+
+    #combine the two arrays right now to sort 
+    #sort the two 
     pos_dates = [datetime.datetime.strptime(key, '%m-%d-%Y') for key in pos_time]
-    pos_dates.sort()
-    sorted_pos_dates = [datetime.datetime.strftime(dates, '%m-%d-%Y') for dates in pos_dates]
     neg_dates = [datetime.datetime.strptime(key, '%m-%d-%Y') for key in neg_time]
-    neg_dates.sort()
-    sorted_neg_dates = [datetime.datetime.strftime(dates, '%m-%d-%Y') for dates in pos_dates]
+    pos_set = set(pos_dates)
+    neg_set = set(neg_dates)
+    diff = neg_set - pos_set
+    all_dates = pos_dates + list(diff)
+    all_dates.sort()
+    print(all_dates)
+    sorted_all_dates = [datetime.datetime.strftime(dates, '%m-%d-%Y') for dates in all_dates]
+    #think of all edge cases
+    for i in range(len(sorted_all_dates)):
+        if(sorted_all_dates[i][1:] in pos_time and sorted_all_dates[i][1:] in neg_time):
+            all_sorted[sorted_all_dates[i]] = pos_time[sorted_all_dates[i][1:]] + neg_time[sorted_all_dates[i][1:]]
+            total = pos_time[sorted_all_dates[i][1:]] + -(neg_time[sorted_all_dates[i][1:]])
+            sentiment = (pos_time[sorted_all_dates[i][1:]] + neg_time[sorted_all_dates[i][1:]])/total
+            if(sorted_all_dates[i] not in dates):
+                dates.append(sorted_all_dates[i])
+                sentiments.append(sentiment)
+        elif(sorted_all_dates[i] in pos_time and sorted_all_dates[i] in neg_time):
+            all_sorted[sorted_all_dates[i]] = pos_time[sorted_all_dates[i]] + neg_time[sorted_all_dates[i]]
+            total = pos_time[sorted_all_dates[i]] + -(neg_time[sorted_all_dates[i]])
+            sentiment = (pos_time[sorted_all_dates[i]] + neg_time[sorted_all_dates[i]])/total
+            if(sorted_all_dates[i] not in dates):
+                dates.append(sorted_all_dates[i])
+                sentiments.append(sentiment)
+        elif(sorted_all_dates[i][1:] in pos_time or sorted_all_dates[i] in pos_time and (sorted_all_dates[i][1:] not in neg_time or sorted_all_dates[i] not in neg_time)):
+            if(sorted_all_dates[i][1:] in pos_time):
+                #possible that the first line can be skipped entirely seems unnecessary
+                all_sorted[sorted_all_dates[i]] = pos_time[sorted_all_dates[i][1:]]
+            elif(sorted_all_dates[i] in pos_time):
+                all_sorted[sorted_all_dates[i]] = pos_time[sorted_all_dates[i]]
+            #because there are no negative sentiments on this day that means that there is nothing to
+            #lower the amount of sentiment with so the sentiment is completely positive on this day
+            if(sorted_all_dates[i] not in dates):
+                dates.append(sorted_all_dates[i])
+                sentiments.append(1)
+        elif(sorted_all_dates[i][1:] in neg_time or sorted_all_dates[i] in neg_time and(sorted_all_dates[i][1:] not in pos_time or sorted_all_dates[i] not in pos_time)):
+            if(sorted_all_dates[i][1:] in neg_time):
+                #possible that the first line can be skipped entirely seems unnecessary
+                all_sorted[sorted_all_dates[i]] = neg_time[sorted_all_dates[i][1:]]
+            elif(sorted_all_dates[i] in neg_time):
+                all_sorted[sorted_all_dates[i]] = neg_time[sorted_all_dates[i]]
+            if(sorted_all_dates[i] not in dates):
+                dates.append(sorted_all_dates[i])
+                sentiments.append(-1)
+
+    print(sorted_all_dates)
+    print(pos_time)
+    print(neg_time)
+    print(all_sorted)
+    print(dates)
+    print(sentiments)
+
+
+    return ({"sentiment": sentiments, "dates": dates, "totaltweets": len(tweet_array)})
     
-    for i in range(len(sorted_pos_dates)):
-        if(sorted_pos_dates[i][0] == '0'):
-            pos_sorted[sorted_pos_dates[i]] = pos_time[sorted_pos_dates[i][1:]]
-        else:
-            pos_sorted[sorted_pos_dates[i]] = pos_time[sorted_pos_dates[i]]
 
-    for i in range(len(sorted_neg_dates)):
-        if(sorted_neg_dates[i][0] == '0'):
-            neg_sorted[sorted_neg_dates[i]] = neg_time[sorted_neg_dates[i][1:]]
-        else:
-            neg_sorted[sorted_neg_dates[i]] = neg_time[sorted_neg_dates[i]]
-
-    print(pos_sorted)
-    print(neg_sorted)
-
-    for key in pos_sorted:
-        total = pos_sorted[key] + neg_sorted[key]
-        sentiment = (pos_sorted[key] - neg_sorted[key])/total
-        dates.append(key)
-        sentiments.append(sentiment)
-
-    return ({"sentiment": sentiments, "dates": dates, "totalpos": pos_sentiment, "totalneg": neg_sentiment})
-    
-
-
+if __name__ == "__main__":
+    app.run(host='0.0.0.0', debug=False, port=os.environ.get('PORT', 80))
