@@ -24,7 +24,7 @@ class SearchBar extends React.Component {
             method: "POST",
             body: JSON.stringify({topic: this.state.topic})
         }
-        return fetch('http://localhost:5000/topic', requestBody).then(res => res.json()).then(returnedData => {
+        return fetch('https://tweet-sentalyzer-backend.herokuapp.com/topic', requestBody).then(res => res.json()).then(returnedData => {
             this.setState({data: returnedData});
             this.setShowLoadIcon(false);
             this.setShowGraph(true);
